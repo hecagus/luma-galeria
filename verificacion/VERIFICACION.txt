@@ -1,0 +1,13 @@
+Luma 1.0.0 — Verificación de la entrega
+
+APK Android nativa, universal, minSdk 29 y targetSdk 36.
+Firma APK v3 verificada por apksigner; alineación verificada por zipalign.
+Permisos: solo lectura de fotos y compatibilidad con selección parcial.
+Sin permiso INTERNET, WRITE_EXTERNAL_STORAGE ni MANAGE_EXTERNAL_STORAGE.
+Sin bibliotecas de publicidad, analítica, compras ni dependencias de ejecución externas.
+
+11 comprobaciones de lógica: correctas.
+9 pruebas Robolectric: correctas. Incluyen arranque en API 29 y 36, permisos denegados y parciales, revocación, lectura de metadatos, búsqueda, álbumes, favoritos, compartir y apertura de imagen.
+Las pruebas de interfaz utilizan datos sintéticos. No se ha instalado en un teléfono físico.
+
+La clave privada para actualizaciones se incluye exclusivamente dentro del ZIP de proyecto y firma. No está dentro de la APK.

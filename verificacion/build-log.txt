@@ -1,0 +1,19 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): false
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=Luma by HecAgus, O=HecAgus, C=MX
+Signer #1 certificate SHA-256 digest: fa2ced0e9857c9d10b816c20913a79085aae095fc4a00e2a3d0e054e6452259c
+Signer #1 certificate SHA-1 digest: 5188f3d8959be297981afcfb5f36f0a18d25d54b
+Signer #1 certificate MD5 digest: f023247549bdda10fe18e62838feea49
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 3072
+Signer #1 public key SHA-256 digest: e28c471f5dbe5897f777955b59b3ec70d2a9dddda0073770f0ebd201963906c6
+Signer #1 public key SHA-1 digest: 998298b77d7b6e6c972f44d596af9650896b4e1e
+Signer #1 public key MD5 digest: 4dd9c3c40795c300ea327deaea3f0484
+
+READY: Luma-1.0.0.apk (41,429 bytes). Android 10+, universal, signed.

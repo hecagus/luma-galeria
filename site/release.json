@@ -1,0 +1,13 @@
+{
+  "version":"1.0.0",
+  "tag":"v1.0.0",
+  "file":"Luma-1.0.0.apk",
+  "size":41429,
+  "sha256":"187e8ce7789c61f094d48eb75a813ea33dc8a7653d91a6873a5e6bc54b9305df",
+  "download":"https://github.com/hecagus/luma-galeria/releases/download/v1.0.0/Luma-1.0.0.apk",
+  "release":"https://github.com/hecagus/luma-galeria/releases/tag/v1.0.0",
+  "repository":"https://github.com/hecagus/luma-galeria",
+  "minSdk":29,
+  "targetSdk":36,
+  "published":"2026-11-10"
+}
