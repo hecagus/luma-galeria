@@ -43,7 +43,7 @@ shutil.copy(BUILD/'resources.apk',BUILD/'unsigned.apk')
 with zipfile.ZipFile(BUILD/'unsigned.apk','a',compression=zipfile.ZIP_DEFLATED) as apk:
     for dex in (BUILD/'dex').glob('*.dex'): apk.write(dex,dex.name)
 run(TOOLS/'zipalign','-P','16','-f','4',BUILD/'unsigned.apk',BUILD/'aligned.apk')
-final=OUT/'Luma-1.0.0.apk'
+final=OUT/'Galeria-Luma-1.0.1.apk'
 run(TOOLS/'apksigner','sign','--ks',key,'--ks-key-alias','luma','--ks-pass',f'file:{password}',
     '--v4-signing-enabled','false','--out',final,BUILD/'aligned.apk')
 run(TOOLS/'apksigner','verify','--verbose','--print-certs',final)

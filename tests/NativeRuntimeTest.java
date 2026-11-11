@@ -72,7 +72,7 @@ public class NativeRuntimeTest {
     @Test public void opensAlbumAndReturnsToAlbumList()throws Exception{
         start(true);((LinearLayout)get("bottom")).getChildAt(1).performClick();GridView grid=(GridView)get("grid");assertEquals(2,grid.getCount());
         grid.performItemClick(null,0,0);assertEquals(2,grid.getCount());assertEquals("Cámara",((TextView)get("heading")).getText().toString());
-        call("navigateBack");assertEquals(2,grid.getCount());assertEquals("Luma",((TextView)get("heading")).getText().toString());capture("albums");
+        call("navigateBack");assertEquals(2,grid.getCount());assertEquals("Galería Luma",((TextView)get("heading")).getText().toString());capture("albums");
     }
     @Test public void favoritesPersistAndShareGrantsReadAccessToCurrentPhoto()throws Exception{
         start(true);call("openViewer",new Class<?>[]{int.class},0);call("toggleFavorite");

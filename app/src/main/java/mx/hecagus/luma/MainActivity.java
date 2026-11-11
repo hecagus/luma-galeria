@@ -103,7 +103,7 @@ public final class MainActivity extends Activity {
         base=new LinearLayout(this);base.setOrientation(LinearLayout.VERTICAL);base.setFocusableInTouchMode(true);root.addView(base,match());base.requestFocus();
         LinearLayout header=row();header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(20),dp(15),dp(14),dp(12));
         backButton=iconButton("back","Volver a los álbumes",this::navigateBack);backButton.setVisibility(View.GONE);header.addView(backButton,lp(44,48));
-        LinearLayout titles=vertical();heading=text("Luma",32,TEXT,true);heading.setLetterSpacing(-.04f);heading.setSingleLine(true);heading.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout titles=vertical();heading=text("Galería Luma",29,TEXT,true);heading.setLetterSpacing(-.04f);heading.setSingleLine(true);heading.setEllipsize(TextUtils.TruncateAt.END);
         subtitle=text("Tu galería, sin ruido.",12,MUTED,false);titles.addView(heading);titles.addView(subtitle);header.addView(titles,new LinearLayout.LayoutParams(0,-2,1));
         View options=iconButton("more","Opciones de la galería",null);options.setOnClickListener(v->showOptions(v));header.addView(options,lp(48,48));base.addView(header);
         LinearLayout searchBar=row();searchBar.setGravity(Gravity.CENTER_VERTICAL);searchBar.setPadding(dp(14),0,dp(8),0);searchBar.setBackground(round(SURFACE,16));
@@ -172,7 +172,7 @@ public final class MainActivity extends Activity {
             Album album=groups.get(photo.albumKey);if(album==null)groups.put(photo.albumKey,new Album(photo));else album.count++;
         }
         albums.addAll(groups.values());
-        heading.setText(albumKey==null?"Luma":albumName);backButton.setVisibility(albumKey==null?View.GONE:View.VISIBLE);
+        heading.setText(albumKey==null?"Galería Luma":albumName);backButton.setVisibility(albumKey==null?View.GONE:View.VISIBLE);
         subtitle.setText(albumKey==null?"Tu galería, sin ruido.":"Álbum · En tu dispositivo");
         sectionTitle.setText(isAlbumGrid()?"Tus álbumes":tab==2?"Tus favoritos":albumKey!=null?"Fotos del álbum":"Tus fotos");
         sectionCount.setText(loading?"Actualizando…":isAlbumGrid()?albums.size()+" álbumes":visible.size()+" fotos");
@@ -216,7 +216,7 @@ public final class MainActivity extends Activity {
         sort.add(1,11,1,"Más antiguas").setCheckable(true).setChecked(order==1);
         sort.add(1,12,2,"Nombre de archivo").setCheckable(true).setChecked(order==2);
         menu.getMenu().add(0,2,1,columns==3?"Cuadrícula de 4 columnas":"Cuadrícula de 3 columnas");
-        menu.getMenu().add(0,3,2,"Cambiar acceso a fotos");menu.getMenu().add(0,4,3,"Permisos de Android");menu.getMenu().add(0,5,4,"Acerca de Luma");
+        menu.getMenu().add(0,3,2,"Cambiar acceso a fotos");menu.getMenu().add(0,4,3,"Permisos de Android");menu.getMenu().add(0,5,4,"Acerca de Galería Luma");
         menu.setOnMenuItemClickListener(item->{
             int id=item.getItemId();if(id==1)reload();else if(id==2){columns=columns==3?4:3;preferences.edit().putInt("columns",columns).apply();refresh();}
             else if(id==3)requestPhotos();else if(id==4)openSettings();else if(id==5)about();
@@ -225,7 +225,7 @@ public final class MainActivity extends Activity {
     }
     private void openSettings() { startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))); }
     private void about() {
-        new AlertDialog.Builder(this).setTitle("Luma · 1.0.0").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos se leen desde Android; Luma no las copia a una nube. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
+        new AlertDialog.Builder(this).setTitle("Galería Luma · 1.0.1").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos se leen desde Android; Luma no las copia a una nube. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
     }
     private void openViewer(int index) {
         viewerPhotos.clear();viewerPhotos.addAll(visible);viewerIndex=index;viewerOpen=true;

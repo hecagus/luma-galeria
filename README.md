@@ -1,17 +1,19 @@
-# Luma 1.0.0
+# Galería Luma 1.0.1
+
+El icono de Android se llama **Galería**. Dentro de la app aparece **Galería Luma**. La actualización conserva el paquete y la firma de la versión anterior.
 
 **Tu galería, sin ruido.** App Android nativa de HecAgus, sin anuncios, cuentas, compras ni suscripciones. No declara permiso de Internet y no incluye bibliotecas de publicidad o analítica.
 
 ## Descargar
 
-- [APK Luma 1.0.0](https://github.com/hecagus/luma-galeria/releases/download/v1.0.0/Luma-1.0.0.apk)
+- [APK Luma 1.0.1](https://github.com/hecagus/luma-galeria/releases/download/v1.0.1/Galeria-Luma-1.0.1.apk)
 - [Versiones y cambios](https://github.com/hecagus/luma-galeria/releases)
 
 ## Instalar
 
-1. Descarga `Luma-1.0.0.apk` en el teléfono y abre el archivo.
+1. Descarga `Galeria-Luma-1.0.1.apk` en el teléfono y abre el archivo.
 2. Si Android lo solicita, permite que esa aplicación abra instaladores y confirma la instalación de Luma.
-3. Abre Luma y toca **Elegir acceso a fotos**. En Android 14 o posterior puedes permitir todas las fotos o seleccionar algunas.
+3. Abre Galería y toca **Elegir acceso a fotos**. En Android 14 o posterior puedes permitir todas las fotos o seleccionar algunas.
 4. Para ampliar el acceso después, usa **Opciones → Cambiar acceso a fotos**. Si Android ya no muestra la solicitud, usa **Opciones → Permisos de Android**.
 
 Requiere Android 10 o posterior (API 29). La APK es universal: no contiene código nativo específico de procesador. Está dirigida a API 36 y firmada con una clave propia. No está publicada en Google Play.
@@ -46,7 +48,7 @@ python3 scripts/prepare_toolchain.py
 python3 scripts/build.py
 ```
 
-La preparación descarga paquetes fijados de Google (SDK 36, Build Tools 36.0.0) y Eclipse ECJ 3.43.0 desde Maven Central y verifica sus sumas. No instala nada en el teléfono. El build compila recursos, Java y DEX, alinea y firma `output/Luma-1.0.0.apk`. Verifica la firma, el nivel de Android, los permisos y la ausencia de bibliotecas nativas; genera `SHA256SUMS.txt`.
+La preparación descarga paquetes fijados de Google (SDK 36, Build Tools 36.0.0) y Eclipse ECJ 3.43.0 desde Maven Central y verifica sus sumas. No instala nada en el teléfono. El build compila recursos, Java y DEX, alinea y firma `output/Galeria-Luma-1.0.1.apk`. Verifica la firma, el nivel de Android, los permisos y la ausencia de bibliotecas nativas; genera `SHA256SUMS.txt`.
 
 También puedes indicar rutas propias mediante `LUMA_ANDROID_JAR`, `LUMA_BUILD_TOOLS` y `LUMA_ECJ_JAR`.
 

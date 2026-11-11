@@ -1,1 +1,1 @@
-{"name":"luma-galeria","version":"1.0.0","private":true,"scripts":{"build":"node scripts/verify-release.mjs"}}
+{"name":"luma-galeria","version":"1.0.1","private":true,"scripts":{"build":"node scripts/verify-release.mjs"}}
