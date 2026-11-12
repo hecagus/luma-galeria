@@ -1,4 +1,3 @@
-Time: 35.423
+Time: 36.266
 
-OK (10 tests)
-
+OK (12 tests)

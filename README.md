@@ -1,4 +1,4 @@
-# Galería Luma 1.1.0
+# Galería Luma 1.1.1
 
 El icono de Android se llama **Galería**. Dentro de la app aparece **Galería Luma**. La actualización conserva el paquete y la firma de la versión anterior.
 
@@ -6,12 +6,12 @@ El icono de Android se llama **Galería**. Dentro de la app aparece **Galería L
 
 ## Descargar
 
-- [APK Luma 1.1.0](https://github.com/hecagus/luma-galeria/releases/download/v1.1.0/Galeria-Luma-1.1.0.apk)
-- [Versiones y cambios](https://github.com/hecagus/luma-galeria/releases)
+- [APK Luma 1.1.1](https://luma-galeria.vercel.app/downloads/Galeria-Luma-1.1.1.apk)
+- [Versiones anteriores](https://github.com/hecagus/luma-galeria/releases)
 
 ## Instalar
 
-1. Descarga `Galeria-Luma-1.1.0.apk` en el teléfono y abre el archivo.
+1. Descarga `Galeria-Luma-1.1.1.apk` en el teléfono y abre el archivo.
 2. Si Android lo solicita, permite que esa aplicación abra instaladores y confirma la instalación de Luma.
 3. Abre Galería y toca **Elegir acceso a fotos**. En Android 14 o posterior puedes permitir todas las fotos o seleccionar algunas.
 4. Para ampliar el acceso después, usa **Opciones → Cambiar acceso a fotos**. Si Android ya no muestra la solicitud, usa **Opciones → Permisos de Android**.
@@ -20,7 +20,7 @@ Requiere Android 10 o posterior (API 29). La APK es universal: no contiene códi
 
 ## Videos
 
-Abre **Videos** y concede el acceso. La cuadrícula muestra miniaturas y duración cuando Android las proporciona. Toca un video para abrirlo con el reproductor instalado.
+Abre **Videos**. Puedes conceder acceso desde **Elegir acceso a videos** o elegir uno o más directamente en **Elegir videos de archivos**. Luma conserva el acceso a los archivos que elegiste hasta que lo quites en **Opciones → Quitar videos elegidos de archivos** o Android lo revoque. Toca una tarjeta para abrir el video con el reproductor instalado.
 
 ## Funciones
 
@@ -52,7 +52,7 @@ python3 scripts/prepare_toolchain.py
 python3 scripts/build.py
 ```
 
-La preparación descarga paquetes fijados de Google (SDK 36, Build Tools 36.0.0) y Eclipse ECJ 3.43.0 desde Maven Central y verifica sus sumas. No instala nada en el teléfono. El build compila recursos, Java y DEX, alinea y firma `output/Galeria-Luma-1.1.0.apk`. Verifica la firma, el nivel de Android, los permisos y la ausencia de bibliotecas nativas; genera `SHA256SUMS.txt`.
+La preparación descarga paquetes fijados de Google (SDK 36, Build Tools 36.0.0) y Eclipse ECJ 3.43.0 desde Maven Central y verifica sus sumas. No instala nada en el teléfono. El build compila recursos, Java y DEX, alinea y firma `output/Galeria-Luma-1.1.1.apk`. Verifica la firma, el nivel de Android, los permisos y la ausencia de bibliotecas nativas; genera `SHA256SUMS.txt`.
 
 También puedes indicar rutas propias mediante `LUMA_ANDROID_JAR`, `LUMA_BUILD_TOOLS` y `LUMA_ECJ_JAR`.
 
@@ -91,4 +91,4 @@ Referencias de Android: [MediaStore](https://developer.android.com/training/data
 
 ## Página de descarga
 
-`site/` contiene la página estática, las capturas y los metadatos públicos de la versión. Se publica en Vercel con `npm run build`; no requiere dependencias de npm ni acceso a la firma Android. El botón descarga el archivo publicado en GitHub Releases. La app Android continúa funcionando sin Internet.
+`site/` contiene la página estática, las capturas y los metadatos públicos de la versión. Se publica en Vercel con `npm run build`; no requiere dependencias de npm ni acceso a la firma Android. La página ofrece la APK firmada y su suma SHA-256. La app Android continúa funcionando sin Internet.

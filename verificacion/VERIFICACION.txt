@@ -1,7 +1,7 @@
-Galería Luma 1.1.0
-Paquete mx.hecagus.luma, versionCode 3, Android 10 o posterior.
+Galería Luma 1.1.1
+Paquete mx.hecagus.luma, versionCode 4, Android 10 o posterior.
 APK v3, manifiesto, alineación y SHA-256 verificados.
-Certificado de firma comparado con la APK pública 1.0.1.
-11 comprobaciones de lógica y 10 pruebas Robolectric aprobadas.
-La prueba de videos verifica permisos, búsqueda en MediaStore e intent de reproducción externo con permiso de lectura.
-La reproducción con un reproductor instalado en un teléfono físico queda pendiente.
+El certificado de firma coincide con el de la APK pública 1.1.0.
+11 comprobaciones de lógica y 12 pruebas Robolectric aprobadas.
+Se probó el acceso limitado con MediaStore vacío, el selector de archivos, la persistencia y revocación del acceso y el envío al reproductor externo.
+Queda pendiente la reproducción en un teléfono físico.

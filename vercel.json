@@ -3,5 +3,8 @@
   "framework":null,
   "buildCommand":"node scripts/verify-release.mjs",
   "outputDirectory":"site",
-  "headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},{"key":"Content-Security-Policy","value":"default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"}]}]
+  "headers":[
+    {"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},{"key":"Content-Security-Policy","value":"default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"}]},
+    {"source":"/downloads/:file","headers":[{"key":"Content-Type","value":"application/vnd.android.package-archive"},{"key":"Content-Disposition","value":"attachment"}]}
+  ]
 }

@@ -1,9 +1,9 @@
-Luma 1.1.0
+Luma 1.1.1
 
-1. Abre Galeria-Luma-1.1.0.apk en tu Android.
+1. Abre Galeria-Luma-1.1.1.apk en tu Android.
 2. Confirma la instalación. Si Android lo pide, autoriza a esa aplicación para abrir el instalador.
 3. Abre Galería y toca «Elegir acceso a fotos».
-4. Permite todas las fotos o selecciona algunas. Para ver videos, entra a Videos y concede acceso. Toca un video para abrirlo con tu reproductor.
+4. Permite todas las fotos o selecciona algunas. Para ver videos, entra a Videos y toca «Elegir videos de archivos» o cambia el acceso de Android. Toca un video para abrirlo con tu reproductor.
 
 Requiere Android 10 o posterior. No necesita cuenta, suscripción ni conexión a Internet.
 Fotos, álbumes, búsqueda, favoritos, zoom, compartir y papelera con confirmación de Android 11 o posterior.

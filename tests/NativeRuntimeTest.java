@@ -44,15 +44,23 @@ import org.robolectric.shadows.ShadowContentResolver;
 public class NativeRuntimeTest {
     private ActivityController<MainActivity> controller;
     private MainActivity activity;
+    private Photos media;
     @After public void tearDown(){if(controller!=null)controller.pause().stop().destroy();}
     private void start(boolean allow)throws Exception{
         RuntimeEnvironment.getApplication().getSharedPreferences("luma",0).edit().clear().commit();
-        Photos provider=new Photos();ProviderInfo info=new ProviderInfo();info.authority="media";
-        provider.attachInfo(RuntimeEnvironment.getApplication(),info);ShadowContentResolver.registerProviderInternal("media",provider);
+        media=new Photos();ProviderInfo info=new ProviderInfo();info.authority="media";
+        media.attachInfo(RuntimeEnvironment.getApplication(),info);ShadowContentResolver.registerProviderInternal("media",media);
         if(allow)Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions("android.permission.READ_MEDIA_IMAGES");
         controller=Robolectric.buildActivity(MainActivity.class);activity=controller.create().start().resume().visible().get();
-        for(int i=0;i<100;i++){Shadows.shadowOf(Looper.getMainLooper()).idle();if(!(Boolean)get("loading"))break;Thread.sleep(20);}
-        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        waitForScan();
+    }
+    private void waitForScan()throws Exception{
+        for(int i=0;i<100;i++){
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            if(!(Boolean)get("loading"))return;
+            Thread.sleep(20);
+        }
+        fail("Gallery scan did not finish");
     }
     private Object get(String name)throws Exception{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return f.get(activity);}
     private Object call(String name,Class<?>[] types,Object... args)throws Exception{Method m=MainActivity.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(activity,args);}
@@ -122,17 +130,64 @@ public class NativeRuntimeTest {
         assertTrue((play.getFlags()&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0);
         assertFalse((Boolean)get("viewerOpen"));
     }
+    @Test public void limitedAccessWithAnEmptyIndexOffersVideoFiles()throws Exception {
+        start(false);
+        media.showVideos=false;
+        Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions("android.permission.READ_MEDIA_VISUAL_USER_SELECTED");
+        ((LinearLayout)get("bottom")).getChildAt(3).performClick();
+        call("reload");
+        waitForScan();
+        assertEquals(0,((GridView)get("grid")).getCount());
+        assertTrue(hasText((View)get("root"),"Elegir videos de archivos"));
+        assertTrue(hasText((View)get("root"),"Elegir acceso a videos"));
+        assertFalse(hasText((View)get("root"),"Todavía no hay videos."));
+        call("pickVideos");
+        Intent picker=Shadows.shadowOf(activity).getNextStartedActivityForResult().intent;
+        assertEquals(Intent.ACTION_OPEN_DOCUMENT,picker.getAction());
+        assertEquals("video/*",picker.getType());
+        assertTrue(picker.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY,false));
+        assertTrue(picker.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE,false));
+    }
+    @Test public void selectedDocumentStaysInVideosWithoutMediaStorePermission()throws Exception {
+        start(false);
+        ShadowContentResolver.registerProviderInternal("selected.test",media);
+        Uri document=Uri.parse("content://selected.test/document/video");
+        ((LinearLayout)get("bottom")).getChildAt(3).performClick();
+        call("pickVideos");
+        int request=Shadows.shadowOf(activity).getNextStartedActivityForResult().requestCode;
+        activity.onActivityResult(request,Activity.RESULT_OK,new Intent().setData(document)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION));
+        waitForScan();
+        call("reload");
+        waitForScan();
+        GridView grid=(GridView)get("grid");
+        assertEquals(1,grid.getCount());
+        grid.performItemClick(null,0,0);
+        Intent play=Shadows.shadowOf(activity).getNextStartedActivity();
+        assertEquals(document,play.getData());
+        assertEquals("video/mp4",play.getType());
+        assertTrue((play.getFlags()&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0);
+        activity.getContentResolver().releasePersistableUriPermission(document,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        call("reload");
+        waitForScan();
+        assertEquals(0,grid.getCount());
+    }
     private void capture(String name)throws Exception{
         View view=(View)get("root");view.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2220,View.MeasureSpec.EXACTLY));view.layout(0,0,1080,2220);
         Thread.sleep(250);Shadows.shadowOf(Looper.getMainLooper()).idle();
         Bitmap bitmap=Bitmap.createBitmap(1080,2220,Bitmap.Config.ARGB_8888);view.draw(new Canvas(bitmap));File folder=new File("build/previews");folder.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(folder,name+".png"))){bitmap.compress(Bitmap.CompressFormat.PNG,100,out);}bitmap.recycle();
     }
     public static final class Photos extends ContentProvider{
+        volatile boolean showVideos=true;
         public boolean onCreate(){return true;}
         public Cursor query(Uri uri,String[] projection,String selection,String[] args,String sort){
             MatrixCursor c=new MatrixCursor(projection);
+            if("selected.test".equals(uri.getAuthority())){
+                c.addRow(new Object[]{"Elegido.mp4","video/mp4",100000L,1750000000000L});
+                return c;
+            }
             if(uri.getPath().contains("/video/")){
-                c.addRow(new Object[]{4L,"Paseo.mp4","1","Cámara","DCIM/Camera/","video/mp4",1750000000000L,1750000000L,2000000L,1280,720,"external_primary",65000L});
+                if(showVideos)c.addRow(new Object[]{4L,"Paseo.mp4","1","Cámara","DCIM/Camera/","video/mp4",1750000000000L,1750000000L,2000000L,1280,720,"external_primary",65000L});
                 return c;
             }
             c.addRow(new Object[]{1L,"Bosque.jpg","1","Cámara","DCIM/Camera/","image/jpeg",1750000000000L,1750000000L,2000000L,1200,800,"external_primary"});

@@ -53,7 +53,7 @@ import java.util.concurrent.Future;
 public final class MainActivity extends Activity {
     private static final int BG=0xFF0E141C, SURFACE=0xFF19222D, ACCENT=0xFFC0F4D0,
         TEXT=0xFFF3F6F7, MUTED=0xFF93A4B7;
-    private static final int MEDIA_PERMISSION=10, TRASH_REQUEST=20, VIDEOS_TAB=3;
+    private static final int MEDIA_PERMISSION=10, TRASH_REQUEST=20, PICK_VIDEOS=30, VIDEOS_TAB=3;
     private static final String SELECTED="android.permission.READ_MEDIA_VISUAL_USER_SELECTED";
     private final ExecutorService scan=Executors.newSingleThreadExecutor(), fullImage=Executors.newSingleThreadExecutor();
     private final List<MediaRepository.Photo> photos=new ArrayList<>(), visible=new ArrayList<>(), viewerPhotos=new ArrayList<>();
@@ -84,6 +84,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
         preferences=getSharedPreferences("luma",MODE_PRIVATE);
+        if(saved!=null)tab=saved.getInt("tab");
         favorites=new HashSet<>(preferences.getStringSet("favorites",Collections.<String>emptySet()));
         order=preferences.getInt("order",0);columns=preferences.getInt("columns",3);
         thumbnails=new ThumbnailLoader(getContentResolver());
@@ -130,6 +131,10 @@ public final class MainActivity extends Activity {
         root.requestApplyInsets();refresh();
     }
     @Override public void onResume() { super.onResume();reload(); }
+    @Override protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putInt("tab",tab);
+    }
     private boolean isVideoTab() { return tab==VIDEOS_TAB; }
 
     private String readPermission(boolean video) {
@@ -152,6 +157,18 @@ public final class MainActivity extends Activity {
         requestPermissions(requested,MEDIA_PERMISSION);
     }
 
+    private void pickVideos() {
+        Intent picker=new Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("video/*")
+            .putExtra(Intent.EXTRA_LOCAL_ONLY,true)
+            .putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
+        try { startActivityForResult(picker,PICK_VIDEOS); }
+        catch(android.content.ActivityNotFoundException missing) {
+            toast("Android no encontró un selector de archivos.");
+        }
+    }
+
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results) {
         super.onRequestPermissionsResult(request,permissions,results);
         if(request==MEDIA_PERMISSION)reload();
@@ -162,9 +179,9 @@ public final class MainActivity extends Activity {
         if(scanTask!=null)scanTask.cancel(true);
         boolean canReadPhotos=hasAccess(false), canReadVideos=hasAccess(true);
         if(!canReadPhotos){photos.clear();if(viewerOpen)closeViewer();}
-        if(!canReadVideos)videos.clear();
+        if(!hasFullAccess(true))videos.clear();
         if(!canReadPhotos||!canReadVideos)thumbnails.clear();
-        loading=canReadPhotos||canReadVideos;
+        loading=canReadPhotos||canReadVideos||!getContentResolver().getPersistedUriPermissions().isEmpty();
         refresh();
         if(!loading)return;
         scanTask=scan.submit(()->{
@@ -175,6 +192,8 @@ public final class MainActivity extends Activity {
             if(Thread.currentThread().isInterrupted())return;
             try { if(canReadVideos)foundVideos=MediaRepository.loadVideos(getContentResolver()); }
             catch(RuntimeException failure){error=true;}
+            if(Thread.currentThread().isInterrupted())return;
+            foundVideos=MediaRepository.withSelectedVideos(this,foundVideos);
             List<MediaRepository.Photo> newPhotos=foundPhotos, newVideos=foundVideos;
             boolean loadFailed=error;
             runOnUiThread(()->{
@@ -230,27 +249,31 @@ public final class MainActivity extends Activity {
         boolean access=hasAccess(videoTab);
         boolean partial=access&&!hasFullAccess(videoTab);
         accessBanner.setVisibility(partial?View.VISIBLE:View.GONE);
-        accessBanner.setText(videoTab?"Acceso a videos seleccionados · Toca para elegir más"
+        accessBanner.setText(videoTab?"Acceso limitado a videos · Toca para cambiarlo"
             :"Acceso a fotos seleccionadas · Toca para elegir más");
         applyColumns();adapter.notifyDataSetChanged();
         for(int i=content.getChildCount()-1;i>0;i--)content.removeViewAt(i);
         int count=isAlbumGrid()?albums.size():visible.size();
-        if(videoTab && !access){
-            showEmpty("videos","Tus videos","Permite el acceso a los videos para verlos en la galería.",
-                "Elegir acceso a videos",this::requestMedia,true);
-        } else if(videoTab && count==0 && !loading){
-            showEmpty("videos",query.isEmpty()?"Todavía no hay videos.":"No encontramos coincidencias.",
-                query.isEmpty()?"Los videos disponibles en tu dispositivo aparecerán aquí.":"Prueba con parte del nombre, un álbum o un mes.",
-                query.isEmpty()?"Actualizar":"Limpiar búsqueda",query.isEmpty()?this::reload:()->search.setText(""),false);
-        } else if(!access)showEmpty("photos","Tus fotos, sin ruido.","Luma necesita acceso para mostrar las fotos de tu teléfono. Puedes permitir todas o elegir solo algunas. Sin anuncios, cuentas ni conexión a Internet.","Elegir acceso a fotos",this::requestMedia,true);
-        else if(count==0&&!loading)showEmpty(tab==2?"heart":"photos",query.isEmpty()?(tab==2?"Aquí van tus favoritas.":"Todavía no hay fotos."):"No encontramos coincidencias.",query.isEmpty()?(tab==2?"Abre una foto y toca el corazón para guardarla aquí.":partial?"No hay fotos disponibles con el acceso actual. Puedes seleccionar más desde la franja superior.":"Las fotos guardadas por la cámara y otras apps aparecerán aquí."):"Prueba con parte del nombre, un álbum o un mes.",query.isEmpty()?"Actualizar":"Limpiar búsqueda",query.isEmpty()?this::reload:()->search.setText(""),false);
+        if(videoTab && count==0 && !loading){
+            if(!query.isEmpty()){
+                showEmpty("videos","No encontramos coincidencias.","Prueba con parte del nombre, un álbum o un mes.",
+                    "Limpiar búsqueda",()->search.setText(""),false);
+            } else {
+                String title=access&&!partial?"Todavía no hay videos.":"Elige los videos que quieras ver.";
+                String message=access&&!partial?"Si un video no aparece, puedes buscarlo en tus archivos."
+                    :"Android puede mostrar los videos que autorices. También puedes elegirlos desde tus archivos.";
+                LinearLayout box=showEmpty("videos",title,message,"Elegir videos de archivos",this::pickVideos,false);
+                if(!access||partial)box.addView(actionButton("Elegir acceso a videos",this::requestMedia,false),lp(-1,48));
+            }
+        } else if(!videoTab&&!access)showEmpty("photos","Tus fotos, sin ruido.","Luma necesita acceso para mostrar las fotos de tu teléfono. Puedes permitir todas o elegir solo algunas. Sin anuncios, cuentas ni conexión a Internet.","Elegir acceso a fotos",this::requestMedia,true);
+        else if(!videoTab&&count==0&&!loading)showEmpty(tab==2?"heart":"photos",query.isEmpty()?(tab==2?"Aquí van tus favoritas.":"Todavía no hay fotos."):"No encontramos coincidencias.",query.isEmpty()?(tab==2?"Abre una foto y toca el corazón para guardarla aquí.":partial?"No hay fotos disponibles con el acceso actual. Puedes seleccionar más desde la franja superior.":"Las fotos guardadas por la cámara y otras apps aparecerán aquí."):"Prueba con parte del nombre, un álbum o un mes.",query.isEmpty()?"Actualizar":"Limpiar búsqueda",query.isEmpty()?this::reload:()->search.setText(""),false);
         else if(loading&&count==0){ProgressBar progress=new ProgressBar(this);content.addView(progress,new FrameLayout.LayoutParams(dp(40),dp(40),Gravity.CENTER));}
     }
     private void applyColumns() {
         int width=getResources().getConfiguration().screenWidthDp;
         grid.setNumColumns(isAlbumGrid()?(width>=700?3:2):(width>=700?columns+2:columns));
     }
-    private void showEmpty(String icon,String title,String description,String action,Runnable callback,boolean settings) {
+    private LinearLayout showEmpty(String icon,String title,String description,String action,Runnable callback,boolean settings) {
         LinearLayout box=vertical();box.setGravity(Gravity.CENTER);box.setPadding(dp(30),dp(20),dp(30),dp(24));
         IconView image=new IconView(this,icon,ACCENT);box.addView(image,lp(64,64));
         TextView name=text(title,25,TEXT,true);name.setGravity(Gravity.CENTER);LinearLayout.LayoutParams nameLp=lp(-1,-2);nameLp.topMargin=dp(22);box.addView(name,nameLp);
@@ -258,6 +281,7 @@ public final class MainActivity extends Activity {
         box.addView(actionButton(action,callback,true),lp(-1,50));
         if(settings){TextView manage=actionButton("Abrir permisos de Android",this::openSettings,false);LinearLayout.LayoutParams p=lp(-1,48);p.topMargin=dp(9);box.addView(manage,p);}
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.addView(box,new ScrollView.LayoutParams(-1,-1));content.addView(scroll,match());
+        return box;
     }
     private void buildBottom() {
         bottom.removeAllViews();String[] labels={"Fotos","Álbumes","Favoritos","Videos"},icons={"photos","albums","heart","videos"};
@@ -278,15 +302,35 @@ public final class MainActivity extends Activity {
         sort.add(1,12,2,"Nombre de archivo").setCheckable(true).setChecked(order==2);
         menu.getMenu().add(0,2,1,columns==3?"Cuadrícula de 4 columnas":"Cuadrícula de 3 columnas");
         menu.getMenu().add(0,3,2,isVideoTab()?"Cambiar acceso a videos":"Cambiar acceso a fotos");menu.getMenu().add(0,4,3,"Permisos de Android");menu.getMenu().add(0,5,4,"Acerca de Galería Luma");
+        if(isVideoTab()){
+            menu.getMenu().add(0,6,2,"Elegir videos de archivos");
+            if(!getContentResolver().getPersistedUriPermissions().isEmpty())
+                menu.getMenu().add(0,7,3,"Quitar videos elegidos de archivos");
+        }
         menu.setOnMenuItemClickListener(item->{
             int id=item.getItemId();if(id==1)reload();else if(id==2){columns=columns==3?4:3;preferences.edit().putInt("columns",columns).apply();refresh();}
             else if(id==3)requestMedia();else if(id==4)openSettings();else if(id==5)about();
+            else if(id==6)pickVideos();else if(id==7)forgetSelectedVideos();
             else if(id>=10&&id<=12){order=id-10;preferences.edit().putInt("order",order).apply();sortMedia();refresh();grid.setSelection(0);}return true;
         });menu.show();
     }
+    private void forgetSelectedVideos() {
+        new AlertDialog.Builder(this).setTitle("¿Quitar los videos elegidos de archivos?")
+            .setMessage("Solo se quitará su acceso en Galería Luma. Los archivos seguirán en su carpeta.")
+            .setNegativeButton("Cancelar",null)
+            .setPositiveButton("Quitar",(dialog,which)->{
+                for(android.content.UriPermission grant:getContentResolver().getPersistedUriPermissions()){
+                    if(!grant.isReadPermission())continue;
+                    try { getContentResolver().releasePersistableUriPermission(grant.getUri(),Intent.FLAG_GRANT_READ_URI_PERMISSION); }
+                    catch(SecurityException revoked) { /* Android may already have revoked this grant. */ }
+                }
+                thumbnails.clear();
+                reload();
+            }).show();
+    }
     private void openSettings() { startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))); }
     private void about() {
-        new AlertDialog.Builder(this).setTitle("Galería Luma · 1.1.0").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos y videos se leen desde Android. Los videos se abren en el reproductor de tu dispositivo. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
+        new AlertDialog.Builder(this).setTitle("Galería Luma · 1.1.1").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos y videos se leen desde Android. Los videos se abren en el reproductor de tu dispositivo. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
     }
     private void openViewer(int index) {
         viewerPhotos.clear();viewerPhotos.addAll(visible);viewerIndex=index;viewerOpen=true;
@@ -354,6 +398,23 @@ public final class MainActivity extends Activity {
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);
         if(request==TRASH_REQUEST){if(result==RESULT_OK){if(viewerOpen)closeViewer();thumbnails.clear();toast("Foto enviada a la papelera de Android.");reload();}pendingTrash=null;}
+        if(request==PICK_VIDEOS&&result==RESULT_OK&&data!=null){
+            ClipData chosen=data.getClipData();
+            int saved=0, count=chosen==null?1:chosen.getItemCount();
+            for(int i=0;i<count;i++){
+                Uri uri=chosen==null?data.getData():chosen.getItemAt(i).getUri();
+                if(uri==null||!"content".equals(uri.getScheme()))continue;
+                try {
+                    getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    saved++;
+                } catch(SecurityException denied) { /* This provider did not grant lasting access. */ }
+            }
+            if(saved<count)toast("Android no pudo conservar el acceso a algunos videos.");
+            tab=VIDEOS_TAB;
+            search.setText("");
+            buildBottom();
+            reload();
+        }
     }
     private void navigateBack() {
         if(viewerOpen){closeViewer();return;}if(albumKey!=null){albumKey=null;albumName=null;search.setText("");refresh();return;}if(search.length()>0){search.setText("");hideKeyboard();return;}finish();
@@ -374,6 +435,8 @@ public final class MainActivity extends Activity {
             cell.footer.setVisibility(albumMode?View.VISIBLE:View.GONE);cell.heart.setVisibility(!albumMode&&favorites.contains(photo.uri.toString())?View.VISIBLE:View.GONE);
             boolean video=photo.isVideo();
             cell.play.setVisibility(video?View.VISIBLE:View.GONE);
+            cell.videoName.setVisibility(video?View.VISIBLE:View.GONE);
+            if(video)cell.videoName.setText(photo.name);
             cell.duration.setVisibility(video&&photo.duration>0?View.VISIBLE:View.GONE);
             if(video)cell.duration.setText(android.text.format.DateUtils.formatElapsedTime(photo.duration/1000));
             if(albumMode){Album album=albums.get(position);cell.title.setText(album.name);cell.count.setText(album.count+" fotos");cell.setContentDescription("Álbum "+album.name+", "+album.count+" fotos");}
@@ -382,13 +445,17 @@ public final class MainActivity extends Activity {
         }
     }
     private final class Cell extends FrameLayout {
-        final ImageView image;final LinearLayout footer;final TextView title,count,duration;final FrameLayout heart,play;
+        final ImageView image;final LinearLayout footer;final TextView title,count,duration,videoName;final FrameLayout heart,play;
         Cell(){super(MainActivity.this);image=new ImageView(MainActivity.this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackgroundColor(SURFACE);addView(image);
             footer=vertical();footer.setPadding(dp(10),dp(8),dp(10),dp(8));title=text("",13,TEXT,true);title.setSingleLine(true);title.setEllipsize(TextUtils.TruncateAt.END);count=text("",11,MUTED,false);count.setPadding(0,dp(3),0,0);footer.addView(title);footer.addView(count);addView(footer,new FrameLayout.LayoutParams(-1,dp(60),Gravity.BOTTOM));
             heart=new FrameLayout(MainActivity.this);heart.setPadding(dp(5),dp(5),dp(5),dp(5));heart.setBackground(round(0xCC101923,20));heart.addView(new IconView(MainActivity.this,"heart",ACCENT),match());FrameLayout.LayoutParams h=new FrameLayout.LayoutParams(dp(27),dp(27),Gravity.TOP|Gravity.RIGHT);h.setMargins(0,dp(6),dp(6),0);addView(heart,h);
             play=new FrameLayout(MainActivity.this);play.setBackground(round(0xCC101923,22));
             play.addView(new IconView(MainActivity.this,"play",ACCENT),new FrameLayout.LayoutParams(dp(21),dp(21),Gravity.CENTER));
             addView(play,new FrameLayout.LayoutParams(dp(42),dp(42),Gravity.CENTER));
+            videoName=text("",11,TEXT,true);videoName.setSingleLine(true);videoName.setEllipsize(TextUtils.TruncateAt.END);
+            videoName.setPadding(dp(5),dp(2),dp(5),dp(2));videoName.setBackground(round(0xCC101923,6));
+            FrameLayout.LayoutParams videoLabel=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);
+            videoLabel.setMargins(dp(4),dp(4),dp(4),0);addView(videoName,videoLabel);
             duration=text("",11,TEXT,true);duration.setPadding(dp(5),dp(2),dp(5),dp(2));
             duration.setBackground(round(0xCC101923,6));
             FrameLayout.LayoutParams stamp=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.END);

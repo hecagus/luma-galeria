@@ -2,15 +2,20 @@ package mx.hecagus.luma;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Context;
+import android.content.UriPermission;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.provider.DocumentsContract.Document;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class MediaRepository {
     public static final class Photo {
@@ -38,6 +43,52 @@ public final class MediaRepository {
 
     public static List<Photo> loadVideos(ContentResolver resolver) {
         return load(resolver, true);
+    }
+
+    static List<Photo> withSelectedVideos(Context context, List<Photo> indexedVideos) {
+        ContentResolver resolver=context.getContentResolver();
+        List<Photo> videos=new ArrayList<>(indexedVideos);
+        Set<Uri> known=new HashSet<>();
+        for(Photo video:indexedVideos){
+            known.add(video.uri);
+            known.add(ContentUris.withAppendedId(collection(MediaStore.VOLUME_EXTERNAL,true),ContentUris.parseId(video.uri)));
+        }
+        SimpleDateFormat dates=new SimpleDateFormat("d 'de' MMMM 'de' yyyy",new Locale("es","MX"));
+        String[] columns={Document.COLUMN_DISPLAY_NAME,Document.COLUMN_MIME_TYPE,Document.COLUMN_SIZE,Document.COLUMN_LAST_MODIFIED};
+        for(UriPermission grant:resolver.getPersistedUriPermissions()){
+            if(Thread.currentThread().isInterrupted())break;
+            if(!grant.isReadPermission())continue;
+            Uri uri=grant.getUri();
+            if(known.contains(uri))continue;
+            Uri indexedUri=indexedVideoUri(context,uri);
+            if(indexedUri!=null&&known.contains(indexedUri))continue;
+            try(Cursor cursor=resolver.query(uri,columns,null,null,null)){
+                if(cursor==null||!cursor.moveToFirst())continue;
+                String mime=string(cursor,cursor.getColumnIndex(Document.COLUMN_MIME_TYPE),"video/*");
+                if(!mime.startsWith("video/"))continue;
+                long date=number(cursor,Document.COLUMN_LAST_MODIFIED);
+                String name=string(cursor,cursor.getColumnIndex(Document.COLUMN_DISPLAY_NAME),"Video");
+                videos.add(new Photo(uri,name,"Archivos","selected","",mime,date,number(cursor,Document.COLUMN_SIZE),
+                    0,0,date>0?dates.format(new Date(date)):"Fecha desconocida",0));
+                if(indexedUri!=null)known.add(indexedUri);
+            } catch(RuntimeException unavailable) {
+                // A selected file can be deleted or its provider can become unavailable.
+            }
+        }
+        return videos;
+    }
+
+    private static Uri indexedVideoUri(Context context, Uri documentUri) {
+        if(Build.VERSION.SDK_INT<31)return null;
+        try {
+            Uri mediaUri=MediaStore.getMediaUri(context,documentUri);
+            if(mediaUri!=null&&mediaUri.getPathSegments().contains("file")){
+                return ContentUris.withAppendedId(collection(mediaUri.getPathSegments().get(0),true),ContentUris.parseId(mediaUri));
+            }
+            return mediaUri;
+        } catch(RuntimeException unavailable) {
+            return null;
+        }
     }
 
     private static List<Photo> load(ContentResolver resolver, boolean video) {
@@ -71,7 +122,12 @@ public final class MediaRepository {
     }
 
     private static String string(Cursor cursor,int column,String fallback) {
-        String value=cursor.isNull(column)?null:cursor.getString(column);
+        String value=column<0||cursor.isNull(column)?null:cursor.getString(column);
         return value==null||value.isEmpty()?fallback:value;
+    }
+
+    private static long number(Cursor cursor,String name) {
+        int column=cursor.getColumnIndex(name);
+        return column<0||cursor.isNull(column)?0:cursor.getLong(column);
     }
 }
