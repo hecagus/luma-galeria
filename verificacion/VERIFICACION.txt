@@ -1,7 +1,7 @@
-Galería Luma 1.0.1
-Paquete mx.hecagus.luma, versionCode 2, Android 10 o posterior.
-El icono se llama Galería. La app muestra Galería Luma.
-Firma APK v3, alineación, manifiesto y 11 comprobaciones de lógica verificados.
-La firma coincide con la de Luma 1.0.0.
-El entorno actual carece de las dependencias de Robolectric. Las pruebas de ejecución archivadas y las capturas corresponden a 1.0.0.
-Instalación en Android físico pendiente.
+Galería Luma 1.1.0
+Paquete mx.hecagus.luma, versionCode 3, Android 10 o posterior.
+APK v3, manifiesto, alineación y SHA-256 verificados.
+Certificado de firma comparado con la APK pública 1.0.1.
+11 comprobaciones de lógica y 10 pruebas Robolectric aprobadas.
+La prueba de videos verifica permisos, búsqueda en MediaStore e intent de reproducción externo con permiso de lectura.
+La reproducción con un reproductor instalado en un teléfono físico queda pendiente.

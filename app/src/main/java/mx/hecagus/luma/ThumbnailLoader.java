@@ -35,6 +35,7 @@ public final class ThumbnailLoader {
             try { found=resolver.loadThumbnail(photo.uri,new Size(420,420),null); }
             catch (Exception e) { found=null; }
             catch (OutOfMemoryError e) { return; }
+            if(found==null&&photo.isVideo())return;
             if(found==null){try{found=PhotoDecoder.decode(resolver,photo.uri,420);}catch(Exception|OutOfMemoryError e){return;}}
             if (closed) return;
             cache.put(key,found);

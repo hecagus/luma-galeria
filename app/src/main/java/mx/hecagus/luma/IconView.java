@@ -23,6 +23,11 @@ public final class IconView extends View {
             case "photos":
                 c.drawRoundRect(new RectF(3,4,21,20),3,3,p);c.drawCircle(16.4f,8.6f,1.7f,p);
                 path.moveTo(4,17);path.lineTo(9,11);path.lineTo(14,17);path.lineTo(17,14);path.lineTo(20,17);c.drawPath(path,p);break;
+            case "videos":
+                c.drawRoundRect(new RectF(3,4,21,20),3,3,p);
+                path.moveTo(10,8);path.lineTo(16,12);path.lineTo(10,16);path.close();c.drawPath(path,p);break;
+            case "play":
+                p.setStyle(Paint.Style.FILL);path.moveTo(8,4);path.lineTo(20,12);path.lineTo(8,20);path.close();c.drawPath(path,p);break;
             case "albums":
                 c.drawRoundRect(new RectF(6,7,21,21),3,3,p);path.moveTo(3,16);path.lineTo(3,5);path.quadTo(3,3,5,3);path.lineTo(16,3);c.drawPath(path,p);break;
             case "heart":

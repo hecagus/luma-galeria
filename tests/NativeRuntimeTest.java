@@ -59,7 +59,7 @@ public class NativeRuntimeTest {
     private Object call(String name)throws Exception{return call(name,new Class<?>[]{});}
     private boolean hasText(View v,String value){if(v instanceof TextView&&((TextView)v).getText().toString().contains(value))return true;if(v instanceof ViewGroup)for(int i=0;i<((ViewGroup)v).getChildCount();i++)if(hasText(((ViewGroup)v).getChildAt(i),value))return true;return false;}
     @Test public void startsWithoutPermissionsAndExplainsAccess()throws Exception{
-        start(false);assertTrue(hasText((View)get("root"),"Elegir acceso a fotos"));assertFalse((Boolean)call("hasAccess"));assertEquals(0,((List<?>)get("photos")).size());
+        start(false);assertTrue(hasText((View)get("root"),"Elegir acceso a fotos"));assertFalse((Boolean)call("hasAccess",new Class<?>[]{boolean.class},false));assertEquals(0,((List<?>)get("photos")).size());
         capture("permission");
     }
     @Test public void readsThreePhotosAndFiltersByAccentInsensitiveAlbum()throws Exception{
@@ -83,7 +83,7 @@ public class NativeRuntimeTest {
     }
     @Test public void recognizesSelectedPhotosPermissionWithoutFullPermission()throws Exception{
         start(false);Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions("android.permission.READ_MEDIA_VISUAL_USER_SELECTED");
-        assertTrue((Boolean)call("hasAccess"));assertFalse((Boolean)call("hasFullAccess"));call("reload");
+        assertTrue((Boolean)call("hasAccess",new Class<?>[]{boolean.class},false));assertFalse((Boolean)call("hasFullAccess",new Class<?>[]{boolean.class},false));call("reload");
         for(int i=0;i<100;i++){Shadows.shadowOf(Looper.getMainLooper()).idle();if(!(Boolean)get("loading"))break;Thread.sleep(20);}
         assertEquals(View.VISIBLE,((TextView)get("accessBanner")).getVisibility());
     }
@@ -101,6 +101,27 @@ public class NativeRuntimeTest {
         assertNotNull(((ZoomImageView)get("zoom")).getDrawable());call("moveViewer",new Class<?>[]{int.class},-1);assertEquals(0,(int)get("viewerIndex"));
         call("moveViewer",new Class<?>[]{int.class},1);assertEquals(1,(int)get("viewerIndex"));call("closeViewer");assertFalse((Boolean)get("viewerOpen"));
     }
+    @Test public void videosNeedTheirOwnPermissionAndOpenInExternalPlayer()throws Exception {
+        start(true);
+        ((LinearLayout)get("bottom")).getChildAt(3).performClick();
+        assertTrue(hasText((View)get("root"),"Elegir acceso a videos"));
+        Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions("android.permission.READ_MEDIA_VIDEO");
+        call("reload");
+        for(int i=0;i<100;i++){
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            if(!(Boolean)get("loading"))break;
+            Thread.sleep(20);
+        }
+        GridView grid=(GridView)get("grid");
+        assertEquals(1,grid.getCount());
+        grid.performItemClick(null,0,0);
+        Intent play=Shadows.shadowOf(activity).getNextStartedActivity();
+        assertEquals(Intent.ACTION_VIEW,play.getAction());
+        assertEquals(Uri.parse("content://media/external_primary/video/media/4"),play.getData());
+        assertEquals("video/mp4",play.getType());
+        assertTrue((play.getFlags()&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0);
+        assertFalse((Boolean)get("viewerOpen"));
+    }
     private void capture(String name)throws Exception{
         View view=(View)get("root");view.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2220,View.MeasureSpec.EXACTLY));view.layout(0,0,1080,2220);
         Thread.sleep(250);Shadows.shadowOf(Looper.getMainLooper()).idle();
@@ -109,7 +130,12 @@ public class NativeRuntimeTest {
     public static final class Photos extends ContentProvider{
         public boolean onCreate(){return true;}
         public Cursor query(Uri uri,String[] projection,String selection,String[] args,String sort){
-            MatrixCursor c=new MatrixCursor(projection);c.addRow(new Object[]{1L,"Bosque.jpg","1","Cámara","DCIM/Camera/","image/jpeg",1750000000000L,1750000000L,2000000L,1200,800,"external_primary"});
+            MatrixCursor c=new MatrixCursor(projection);
+            if(uri.getPath().contains("/video/")){
+                c.addRow(new Object[]{4L,"Paseo.mp4","1","Cámara","DCIM/Camera/","video/mp4",1750000000000L,1750000000L,2000000L,1280,720,"external_primary",65000L});
+                return c;
+            }
+            c.addRow(new Object[]{1L,"Bosque.jpg","1","Cámara","DCIM/Camera/","image/jpeg",1750000000000L,1750000000L,2000000L,1200,800,"external_primary"});
             c.addRow(new Object[]{2L,"Mar.jpg","1","Cámara","DCIM/Camera/","image/jpeg",1740000000000L,1740000000L,1500000L,1200,800,"external_primary"});
             c.addRow(new Object[]{3L,"Captura.png","2","Capturas","Pictures/Screenshots/","image/png",1730000000000L,1730000000L,500000L,1080,1920,"external_primary"});return c;
         }

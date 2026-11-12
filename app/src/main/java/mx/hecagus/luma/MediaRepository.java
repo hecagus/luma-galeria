@@ -16,37 +16,60 @@ public final class MediaRepository {
     public static final class Photo {
         public final Uri uri;
         public final String name, album, albumKey, path, mime, dateLabel, searchText, sortName;
-        public final long date, size;
+        public final long date, size, duration;
         public final int width, height;
         Photo(Uri uri, String name, String album, String albumKey, String path, String mime,
               long date, long size, int width, int height, String dateLabel) {
+            this(uri, name, album, albumKey, path, mime, date, size, width, height, dateLabel, -1);
+        }
+        Photo(Uri uri, String name, String album, String albumKey, String path, String mime,
+              long date, long size, int width, int height, String dateLabel, long duration) {
             this.uri=uri; this.name=name; this.album=album; this.albumKey=albumKey;
+            this.duration=duration;
             this.path=path; this.mime=mime; this.date=date; this.size=size;
             this.width=width; this.height=height; this.dateLabel=dateLabel;
             this.searchText=GalleryLogic.normalize(name+" "+album+" "+dateLabel);this.sortName=GalleryLogic.normalize(name);
         }
+        boolean isVideo() { return duration >= 0; }
     }
     public static List<Photo> load(ContentResolver resolver) {
+        return load(resolver, false);
+    }
+
+    public static List<Photo> loadVideos(ContentResolver resolver) {
+        return load(resolver, true);
+    }
+
+    private static List<Photo> load(ContentResolver resolver, boolean video) {
         ArrayList<Photo> photos = new ArrayList<>();
         String[] columns = {"_id","_display_name","bucket_id","bucket_display_name","relative_path",
             "mime_type","datetaken","date_added","_size","width","height","volume_name"};
+        if (video) {
+            columns=java.util.Arrays.copyOf(columns,columns.length+1);
+            columns[columns.length-1]=MediaStore.Video.Media.DURATION;
+        }
         String selection="is_pending = 0" + (Build.VERSION.SDK_INT>=30 ? " AND is_trashed = 0" : "");
         SimpleDateFormat dates = new SimpleDateFormat("d 'de' MMMM 'de' yyyy", new Locale("es","MX"));
-        try (Cursor cursor=resolver.query(MediaStore.Images.Media.getContentUri("external"),columns,
+        try (Cursor cursor=resolver.query(collection("external",video),columns,
                 selection,null,"date_added DESC, _id DESC")) {
             if (cursor == null) return photos;
             while (cursor.moveToNext()) {
                 if (Thread.currentThread().isInterrupted()) break;
                 long id=cursor.getLong(0), date=GalleryLogic.timestamp(cursor.getLong(6),cursor.getLong(7));
                 String volume=string(cursor,11,"external_primary"), album=string(cursor,3,"Sin álbum");
-                Uri uri=ContentUris.withAppendedId(MediaStore.Images.Media.getContentUri(volume),id);
-                photos.add(new Photo(uri,string(cursor,1,"Foto"),album,volume+":"+string(cursor,2,album),
-                    string(cursor,4,""),string(cursor,5,"image/*"),date,cursor.getLong(8),
-                    cursor.getInt(9),cursor.getInt(10),date>0?dates.format(new Date(date)):"Fecha desconocida"));
+                Uri uri=ContentUris.withAppendedId(collection(volume,video),id);
+                photos.add(new Photo(uri,string(cursor,1,video?"Video":"Foto"),album,volume+":"+string(cursor,2,album),
+                    string(cursor,4,""),string(cursor,5,video?"video/*":"image/*"),date,cursor.getLong(8),
+                    cursor.getInt(9),cursor.getInt(10),date>0?dates.format(new Date(date)):"Fecha desconocida",
+                    video?Math.max(0,cursor.getLong(12)):-1));
             }
         }
         return photos;
     }
+    private static Uri collection(String volume, boolean video) {
+        return video ? MediaStore.Video.Media.getContentUri(volume) : MediaStore.Images.Media.getContentUri(volume);
+    }
+
     private static String string(Cursor cursor,int column,String fallback) {
         String value=cursor.isNull(column)?null:cursor.getString(column);
         return value==null||value.isEmpty()?fallback:value;
