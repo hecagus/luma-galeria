@@ -110,7 +110,7 @@ public final class MainActivity extends Activity {
         View options=iconButton("more","Opciones de la galería",null);options.setOnClickListener(v->showOptions(v));header.addView(options,lp(48,48));base.addView(header);
         LinearLayout searchBar=row();searchBar.setGravity(Gravity.CENTER_VERTICAL);searchBar.setPadding(dp(14),0,dp(8),0);searchBar.setBackground(round(SURFACE,16));
         searchBar.addView(new IconView(this,"search",MUTED),lp(21,21));
-        search=new EditText(this);search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(14);search.setSingleLine(true);search.setHint("Buscar por nombre, álbum o fecha");search.setBackgroundColor(Color.TRANSPARENT);search.setPadding(dp(10),0,0,0);search.setContentDescription("Buscar fotos por nombre, álbum o fecha");
+        search=new EditText(this);search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(14);search.setSingleLine(true);search.setHint("Buscar fotos, fechas o filtros");search.setBackgroundColor(Color.TRANSPARENT);search.setPadding(dp(10),0,0,0);search.setContentDescription("Buscar fotos por nombre, álbum o fecha");
         searchBar.addView(search,new LinearLayout.LayoutParams(0,dp(52),1));searchBar.addView(iconButton("close","Borrar búsqueda",()->search.setText("")),lp(36,44));
         LinearLayout.LayoutParams searchLp=lp(-1,52);searchLp.setMargins(dp(20),0,dp(20),dp(12));base.addView(searchBar,searchLp);
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){refresh();}public void afterTextChanged(Editable e){}});
@@ -234,7 +234,7 @@ public final class MainActivity extends Activity {
         for(MediaRepository.Photo photo:videoTab?videos:photos){
             if(tab==2&&!favorites.contains(photo.uri.toString()))continue;
             if(albumKey!=null&&!albumKey.equals(photo.albumKey))continue;
-            boolean matches=true;for(String word:words)if(!photo.searchText.contains(word)){matches=false;break;}if(!matches)continue;
+            if(!GalleryLogic.matchesMedia(words,photo.searchText,photo.name,photo.mime,photo.width,photo.height))continue;
             visible.add(photo);
             if(isAlbumGrid()){
                 Album album=groups.get(photo.albumKey);if(album==null)groups.put(photo.albumKey,new Album(photo));else album.count++;
@@ -256,7 +256,7 @@ public final class MainActivity extends Activity {
         int count=isAlbumGrid()?albums.size():visible.size();
         if(videoTab && count==0 && !loading){
             if(!query.isEmpty()){
-                showEmpty("videos","No encontramos coincidencias.","Prueba con parte del nombre, un álbum o un mes.",
+                showEmpty("videos","No encontramos coincidencias.","Prueba un nombre, álbum o mes. Consulta los filtros en Opciones.",
                     "Limpiar búsqueda",()->search.setText(""),false);
             } else {
                 String title=access&&!partial?"Todavía no hay videos.":"Elige los videos que quieras ver.";
@@ -266,7 +266,7 @@ public final class MainActivity extends Activity {
                 if(!access||partial)box.addView(actionButton("Elegir acceso a videos",this::requestMedia,false),lp(-1,48));
             }
         } else if(!videoTab&&!access)showEmpty("photos","Tus fotos, sin ruido.","Luma necesita acceso para mostrar las fotos de tu teléfono. Puedes permitir todas o elegir solo algunas. Sin anuncios, cuentas ni conexión a Internet.","Elegir acceso a fotos",this::requestMedia,true);
-        else if(!videoTab&&count==0&&!loading)showEmpty(tab==2?"heart":"photos",query.isEmpty()?(tab==2?"Aquí van tus favoritas.":"Todavía no hay fotos."):"No encontramos coincidencias.",query.isEmpty()?(tab==2?"Abre una foto y toca el corazón para guardarla aquí.":partial?"No hay fotos disponibles con el acceso actual. Puedes seleccionar más desde la franja superior.":"Las fotos guardadas por la cámara y otras apps aparecerán aquí."):"Prueba con parte del nombre, un álbum o un mes.",query.isEmpty()?"Actualizar":"Limpiar búsqueda",query.isEmpty()?this::reload:()->search.setText(""),false);
+        else if(!videoTab&&count==0&&!loading)showEmpty(tab==2?"heart":"photos",query.isEmpty()?(tab==2?"Aquí van tus favoritas.":"Todavía no hay fotos."):"No encontramos coincidencias.",query.isEmpty()?(tab==2?"Abre una foto y toca el corazón para guardarla aquí.":partial?"No hay fotos disponibles con el acceso actual. Puedes seleccionar más desde la franja superior.":"Las fotos guardadas por la cámara y otras apps aparecerán aquí."):"Prueba un nombre, álbum o mes. Consulta los filtros en Opciones.",query.isEmpty()?"Actualizar":"Limpiar búsqueda",query.isEmpty()?this::reload:()->search.setText(""),false);
         else if(loading&&count==0){ProgressBar progress=new ProgressBar(this);content.addView(progress,new FrameLayout.LayoutParams(dp(40),dp(40),Gravity.CENTER));}
     }
     private void applyColumns() {
@@ -307,10 +307,14 @@ public final class MainActivity extends Activity {
             if(!getContentResolver().getPersistedUriPermissions().isEmpty())
                 menu.getMenu().add(0,7,3,"Quitar videos elegidos de archivos");
         }
+        menu.getMenu().add(0,8,5,"Filtros de búsqueda");
         menu.setOnMenuItemClickListener(item->{
             int id=item.getItemId();if(id==1)reload();else if(id==2){columns=columns==3?4:3;preferences.edit().putInt("columns",columns).apply();refresh();}
             else if(id==3)requestMedia();else if(id==4)openSettings();else if(id==5)about();
             else if(id==6)pickVideos();else if(id==7)forgetSelectedVideos();
+            else if(id==8)new AlertDialog.Builder(this).setTitle("Filtros de búsqueda")
+                .setMessage("Combina palabras y filtros en el buscador.\n\nFormato: formato:jpg, formato:png, formato:mp4\nOrientación: orientacion:horizontal, orientacion:vertical, orientacion:cuadrada\nResolución mínima: mp:4\n\nEjemplo: cámara formato:jpg mp:4\nLos archivos sin dimensiones conocidas no coinciden con filtros de orientación o resolución.")
+                .setPositiveButton("Cerrar",null).show();
             else if(id>=10&&id<=12){order=id-10;preferences.edit().putInt("order",order).apply();sortMedia();refresh();grid.setSelection(0);}return true;
         });menu.show();
     }
