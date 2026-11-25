@@ -37,6 +37,18 @@ Abre **Videos**. Puedes conceder acceso desde **Elegir acceso a videos** o elegi
 
 Los archivos ocultos, carpetas excluidas por `.nomedia` y contenido que Android no indexa no aparecen automáticamente. Los formatos de video disponibles dependen del reproductor instalado. Las animaciones GIF se muestran como imagen fija.
 
+## Mejora en desarrollo: filtros locales
+
+Inspirada en los [filtros combinables de PhotoPrism](https://docs.photoprism.app/user-guide/search/filters/), referencia del catálogo [Clone Wars](https://github.com/GorvGoyl/Clone-Wars). Implementación Java propia, sin incorporar su servidor ni código externo.
+
+- `formato:jpg`, `formato:png`, `formato:mp4`: formato por MIME o extensión.
+- `orientacion:horizontal`, `orientacion:vertical`, `orientacion:cuadrada`: dimensiones registradas por Android.
+- `mp:4`: resolución mínima de cuatro megapíxeles.
+- Se pueden combinar con la búsqueda existente: `cámara formato:jpg mp:4`.
+- Los filtros funcionan en fotos, álbumes, favoritos y videos; los archivos con dimensiones desconocidas se excluyen de filtros de resolución y orientación.
+
+Consulta Opciones → Filtros de búsqueda. Estos cambios son de código fuente; la APK 1.1.1 publicada no los incluye.
+
 ## Privacidad
 
 El manifiesto solo declara `READ_EXTERNAL_STORAGE` hasta API 32, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` y `READ_MEDIA_VISUAL_USER_SELECTED`. No pide ubicación, cámara, micrófono, notificaciones, acceso total a archivos ni permiso de Internet.

@@ -25,12 +25,7 @@ for directory in [OUT, BUILD/'classes', BUILD/'dex', BUILD/'generated', SIGN]: d
 SIGN.chmod(0o700)
 password = SIGN/'password.txt'
 key = SIGN/'luma-updates.p12'
-if not key.exists():
-    password.write_text(secrets.token_urlsafe(32)); password.chmod(0o600)
-    run('keytool','-genkeypair','-alias','luma','-keyalg','RSA','-keysize','3072','-validity','10000',
-        '-storetype','PKCS12','-keystore',key,'-storepass:file',password,'-keypass:file',password,
-        '-dname','CN=Luma by HecAgus, O=HecAgus, C=MX')
-    key.chmod(0o600)
+if not key.is_file(): raise SystemExit('Restore original signing key before building an update.')
 if not password.exists(): raise SystemExit('Restore the matching signing password before building an update.')
 run(TOOLS/'aapt2','compile','--dir',ROOT/'app/src/main/res','-o',BUILD/'resources.zip')
 run(TOOLS/'aapt2','link','-o',BUILD/'resources.apk','-I',ANDROID,'--manifest',ROOT/'app/src/main/AndroidManifest.xml',
@@ -43,7 +38,7 @@ shutil.copy(BUILD/'resources.apk',BUILD/'unsigned.apk')
 with zipfile.ZipFile(BUILD/'unsigned.apk','a',compression=zipfile.ZIP_DEFLATED) as apk:
     for dex in (BUILD/'dex').glob('*.dex'): apk.write(dex,dex.name)
 run(TOOLS/'zipalign','-P','16','-f','4',BUILD/'unsigned.apk',BUILD/'aligned.apk')
-final=OUT/'Galeria-Luma-1.1.1.apk'
+final=OUT/'Galeria-Luma-1.2.0.apk'
 run(TOOLS/'apksigner','sign','--ks',key,'--ks-key-alias','luma','--ks-pass',f'file:{password}',
     '--v4-signing-enabled','false','--out',final,BUILD/'aligned.apk')
 run(TOOLS/'apksigner','verify','--verbose','--print-certs',final)

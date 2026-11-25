@@ -16,6 +16,39 @@ public final class GalleryLogic {
         for (String word : normalize(query).split("\\s+")) if (!haystack.contains(word)) return false;
         return true;
     }
+    /**
+     * Combined local metadata filters. Unknown prefixes retain ordinary text search.
+     * No file reads, network requests or additional permissions.
+     */
+    public static boolean matchesMedia(String[] words, String searchText, String name,
+                                       String mime, int width, int height) {
+        for (String word : words) {
+            if (word.startsWith("formato:")) {
+                String format = word.substring(8);
+                if (format.equals("jpg")) format = "jpeg";
+                String kind = normalize(mime);
+                String extension = normalize(name);
+                int dot = extension.lastIndexOf('.');
+                extension = dot < 0 ? "" : extension.substring(dot + 1);
+                if (extension.equals("jpg")) extension = "jpeg";
+                if (format.isEmpty() || !(kind.endsWith("/" + format) || extension.equals(format))) return false;
+            } else if (word.startsWith("orientacion:")) {
+                String orientation = word.substring(12);
+                if (width <= 0 || height <= 0) return false;
+                if ("horizontal".equals(orientation)) { if (width <= height) return false; }
+                else if ("vertical".equals(orientation)) { if (height <= width) return false; }
+                else if ("cuadrada".equals(orientation)) { if (width != height) return false; }
+                else return false;
+            } else if (word.startsWith("mp:")) {
+                String value = word.substring(3).replace(',', '.');
+                if (width <= 0 || height <= 0 || !value.matches("[0-9]+(?:\\.[0-9]+)?")) return false;
+                double minimum;
+                try { minimum = Double.parseDouble(value); } catch (NumberFormatException invalid) { return false; }
+                if (Double.isInfinite(minimum) || minimum <= 0 || (long) width * height / 1000000.0 < minimum) return false;
+            } else if (!searchText.contains(word)) return false;
+        }
+        return true;
+    }
     public static long timestamp(long takenMillis, long addedSeconds) {
         return takenMillis > 0 ? takenMillis : Math.max(0, addedSeconds) * 1000L;
     }
