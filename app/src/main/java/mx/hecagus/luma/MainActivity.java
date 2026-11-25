@@ -334,7 +334,7 @@ public final class MainActivity extends Activity {
     }
     private void openSettings() { startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))); }
     private void about() {
-        new AlertDialog.Builder(this).setTitle("Galería Luma · 1.1.1").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos y videos se leen desde Android. Los videos se abren en el reproductor de tu dispositivo. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
+        new AlertDialog.Builder(this).setTitle("Galería Luma · 1.2.0").setMessage("Tu galería, sin ruido.\n\nCreada por HecAgus. Sin anuncios, suscripciones, cuentas ni rastreadores.\n\nNo tiene permiso de Internet. Las fotos y videos se leen desde Android. Los videos se abren en el reproductor de tu dispositivo. Los favoritos y las preferencias se guardan solo en el dispositivo.\n\nCompartir abre el selector de Android para que tú elijas el destino. La papelera solicita confirmación al sistema.\n\nBúsqueda por nombre de archivo, álbum y fecha; no reconoce personas ni contenido de las imágenes.").setPositiveButton("Entendido",null).show();
     }
     private void openViewer(int index) {
         viewerPhotos.clear();viewerPhotos.addAll(visible);viewerIndex=index;viewerOpen=true;
